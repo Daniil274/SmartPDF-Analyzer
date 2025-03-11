@@ -7,7 +7,8 @@ from typing import List, Tuple
 from PIL import Image
 
 
-def extract_images_from_pdf(pdf_path: str, output_dir: str = None, poppler_path: str = None) -> List[str]:
+def extract_images_from_pdf(pdf_path: str, output_dir: str = None, poppler_path: str = None, 
+                           start_page: int = None, end_page: int = None) -> List[str]:
     """
     Extract page images from a PDF file and save them to a temporary directory.
     
@@ -15,6 +16,8 @@ def extract_images_from_pdf(pdf_path: str, output_dir: str = None, poppler_path:
         pdf_path: Path to the PDF file
         output_dir: Directory for saving images (if not specified, a temporary one is created)
         poppler_path: Path to Poppler executable files (e.g., "C:/Poppler/Library/bin")
+        start_page: First page to extract (1-based index, default: first page)
+        end_page: Last page to extract (1-based index, default: last page)
         
     Returns:
         List of paths to saved images
@@ -40,9 +43,28 @@ def extract_images_from_pdf(pdf_path: str, output_dir: str = None, poppler_path:
                 poppler_path = path
                 break
     
+    # Get total page count to validate page range
+    reader = PdfReader(pdf_path)
+    total_pages = len(reader.pages)
+    
+    # Validate and adjust page range
+    if start_page is None:
+        start_page = 1
+    else:
+        start_page = max(1, min(start_page, total_pages))
+        
+    if end_page is None:
+        end_page = total_pages
+    else:
+        end_page = max(start_page, min(end_page, total_pages))
+    
+    # PDF2Image uses 0-based indexing, convert from 1-based
+    first_page = start_page
+    last_page = end_page
+    
     # Extract pages as images
     try:
-        images = convert_from_path(pdf_path, poppler_path=poppler_path)
+        images = convert_from_path(pdf_path, first_page=first_page, last_page=last_page, poppler_path=poppler_path)
     except Exception as e:
         if "poppler" in str(e).lower():
             raise Exception(
@@ -55,7 +77,8 @@ def extract_images_from_pdf(pdf_path: str, output_dir: str = None, poppler_path:
     # Save images
     image_paths = []
     for i, image in enumerate(images):
-        img_path = os.path.join(output_dir, f"page_{i+1:03d}.png")
+        page_num = start_page + i
+        img_path = os.path.join(output_dir, f"page_{page_num:03d}.png")
         image.save(img_path, "PNG")
         image_paths.append(img_path)
     

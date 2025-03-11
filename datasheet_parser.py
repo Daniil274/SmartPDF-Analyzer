@@ -41,11 +41,14 @@ def parse_args():
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     parser.add_argument("--translate", "-tr", action="store_true", help="Enable translation of the parsed datasheet")
     parser.add_argument("--target-language", "-tl", help="Target language for translation (e.g., 'Russian', 'German')", default=None)
+    parser.add_argument("--start-page", "-sp", type=int, help="First page to process (1-based index)", default=None)
+    parser.add_argument("--end-page", "-ep", type=int, help="Last page to process (1-based index)", default=None)
     
     return parser.parse_args()
 
 
-def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_dir=None, poppler_path=None, debug=False, translate=False, target_language=None):
+def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_dir=None, poppler_path=None, 
+                     debug=False, translate=False, target_language=None, start_page=None, end_page=None):
     """
     Process the entire datasheet.
     
@@ -59,6 +62,8 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
         debug: Debug mode flag
         translate: Flag indicating whether to translate the content
         target_language: Target language for translation
+        start_page: First page to process (1-based index)
+        end_page: Last page to process (1-based index)
     
     Returns:
         Path to the generated Markdown file
@@ -69,16 +74,38 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
     # Get PDF metadata
     logger.info(f"Extracting metadata from {pdf_path}")
     metadata = get_pdf_metadata(pdf_path)
-    logger.info(f"Title: {metadata.get('title', 'Unknown')}, pages: {metadata.get('page_count', 0)}")
+    total_pages = metadata.get('page_count', 0)
+    logger.info(f"Title: {metadata.get('title', 'Unknown')}, pages: {total_pages}")
+    
+    # Validate page range
+    if start_page is not None:
+        logger.info(f"Starting from page {start_page}")
+    if end_page is not None:
+        logger.info(f"Ending at page {end_page}")
     
     # Determine output filename based on PDF name
     output_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    
+    # Add page range to filename if specified
+    page_range_suffix = ""
+    if start_page is not None or end_page is not None:
+        start_str = str(start_page) if start_page is not None else "1"
+        end_str = str(end_page) if end_page is not None else str(total_pages)
+        page_range_suffix = f"_p{start_str}-{end_str}"
+        output_name = f"{output_name}{page_range_suffix}"
+    
     if translate and target_language:
         output_name = f"{output_name}_{target_language.lower()}"
     
     # Extract page images
     logger.info(f"Extracting pages from PDF as images")
-    image_paths = extract_images_from_pdf(pdf_path, temp_dir, poppler_path)
+    image_paths = extract_images_from_pdf(
+        pdf_path, 
+        temp_dir, 
+        poppler_path,
+        start_page=start_page,
+        end_page=end_page
+    )
     logger.info(f"Extracted {len(image_paths)} pages")
     
     # Initialize API client
@@ -91,8 +118,14 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
     
     logger.info(f"Starting page processing")
     for i, image_path in enumerate(tqdm(image_paths)):
-        page_num = i + 1
-        logger.info(f"Processing page {page_num}/{len(image_paths)}")
+        # Get actual page number (file name format: page_XXX.png)
+        page_filename = os.path.basename(image_path)
+        try:
+            page_num = int(page_filename.split('_')[1].split('.')[0])
+        except (IndexError, ValueError):
+            page_num = i + 1  # Fallback if filename parsing fails
+            
+        logger.info(f"Processing page {page_num}/{total_pages}")
         
         # Check and resize image if needed
         img_path = resize_image_if_needed(image_path)
@@ -102,13 +135,13 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
             logger.info(f"Translating content to {target_language}")
             instructions = PAGE_INSTRUCTION_TEMPLATE_TRANSLATE.format(
                 page_num=page_num,
-                total_pages=len(image_paths),
+                total_pages=total_pages,
                 target_language=target_language
             )
         else:
             instructions = PAGE_INSTRUCTION_TEMPLATE.format(
                 page_num=page_num,
-                total_pages=len(image_paths)
+                total_pages=total_pages
             )
         
         # Process the page
@@ -181,6 +214,15 @@ def main():
         logger.error("Translation requested but target language not specified. Use --target-language to specify the language.")
         return 1
     
+    # Check page range parameters
+    if args.start_page is not None and args.start_page < 1:
+        logger.error("Start page must be at least 1.")
+        return 1
+    
+    if args.end_page is not None and args.start_page is not None and args.end_page < args.start_page:
+        logger.error("End page must be greater than or equal to start page.")
+        return 1
+    
     # Process the datasheet
     try:
         output_file = process_datasheet(
@@ -192,7 +234,9 @@ def main():
             poppler_path=args.poppler_path,
             debug=args.debug,
             translate=args.translate,
-            target_language=args.target_language
+            target_language=args.target_language,
+            start_page=args.start_page,
+            end_page=args.end_page
         )
         logger.info(f"Successfully created file: {output_file}")
         return 0

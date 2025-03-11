@@ -76,6 +76,32 @@ The default model is `gpt-4o`. You can also use:
 --debug - Enable debug mode
 --translate (-tr) - Enable translation of the parsed datasheet
 --target-language (-tl) - Target language for translation
+--start-page (-sp) - First page to process (1-based index)
+--end-page (-ep) - Last page to process (1-based index)
+```
+
+### Page Range Selection
+
+The parser allows you to process only specific pages from a PDF document:
+
+- **Selective Processing**: Specify a range of pages to extract and process
+- **Flexible Range**: Use either start page, end page, or both to define the range
+- **Output Naming**: Generated files include the page range in their names (e.g., `datasheet_p5-10_full.md`)
+- **Resource Efficiency**: Reduces processing time and API costs when working with large documents
+
+Example usage with page range selection:
+```bash
+# Process only pages 5-10
+python datasheet_parser.py datasheet.pdf --start-page 5 --end-page 10
+
+# Process from page 3 to the end
+python datasheet_parser.py datasheet.pdf --start-page 3
+
+# Process from the beginning to page 15
+python datasheet_parser.py datasheet.pdf --end-page 15
+
+# Combine with translation
+python datasheet_parser.py datasheet.pdf --start-page 5 --end-page 10 --translate --target-language "French"
 ```
 
 ### Translation Feature

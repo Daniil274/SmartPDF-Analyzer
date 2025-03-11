@@ -16,7 +16,12 @@ For tables:
 - Align columns properly using colons in the separator row (e.g., |:---:| for center alignment)
 - For complex tables, maintain proper column alignment for readability
 - Ensure consistent spacing within cells
-- Preserve all numerical values, units, and relationships
+- ALWAYS COMPLETE ALL TABLE CELLS - never leave a table row or cell incomplete
+- Keep table width reasonable - break long text into multiple lines within the same cell if needed
+- DO NOT create tables wider than 120 characters
+- If a table cell contains a lot of text, split it into multiple lines within the same cell
+- NEVER use horizontal scrolling or overflow for tables
+- DO NOT try to preserve exact width of original table columns - focus on content readability
 
 For table of contents:
 - NEVER use dots or other repeated characters to fill space between entry and page number
@@ -41,7 +46,12 @@ For tables:
 - Align columns properly using colons in the separator row (e.g., |:---:| for center alignment)
 - For complex tables, maintain proper column alignment for readability
 - Ensure consistent spacing within cells
-- Preserve all numerical values, units, and relationships
+- ALWAYS COMPLETE ALL TABLE CELLS - never leave a table row or cell incomplete
+- Keep table width reasonable - break long text into multiple lines within the same cell if needed
+- DO NOT create tables wider than 120 characters
+- If a table cell contains a lot of text, split it into multiple lines within the same cell
+- NEVER use horizontal scrolling or overflow for tables
+- DO NOT try to preserve exact width of original table columns - focus on content readability
 
 For table of contents:
 - NEVER use dots or other repeated characters to fill space between entry and page number
@@ -64,6 +74,13 @@ Use headings, tables, lists, and other Markdown elements for optimal presentatio
 Maintain technical integrity while creating a clean, structured document.
 Pay special attention to proper table formatting with aligned columns and clear headers.
 
+For tables:
+- Make sure each table has a complete structure with all cells filled appropriately
+- Split long text in cells into multiple lines within the same cell
+- Keep table width under 120 characters
+- Always finish all rows and cells - NEVER leave tables incomplete
+- Prioritize readability over preserving original layout
+
 If this page contains a table of contents (TOC):
 - Format it as a clean list WITHOUT dots between entries and page numbers
 - Use a simple format like "Section Name - Page X" or just list the section names
@@ -78,6 +95,13 @@ DO NOT include the source text in your response. Only provide the translated con
 Use headings, tables, lists, and other Markdown elements for optimal presentation while maintaining technical accuracy.
 Pay special attention to proper table formatting with aligned columns and clear headers.
 Keep all measurements, part numbers, and technical values unchanged during translation.
+
+For tables:
+- Make sure each table has a complete structure with all cells filled appropriately
+- Split long text in cells into multiple lines within the same cell
+- Keep table width under 120 characters
+- Always finish all rows and cells - NEVER leave tables incomplete
+- Prioritize readability over preserving original layout
 
 If this page contains a table of contents (TOC):
 - Format it as a clean list WITHOUT dots between entries and page numbers
