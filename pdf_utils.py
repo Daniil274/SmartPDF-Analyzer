@@ -9,24 +9,24 @@ from PIL import Image
 
 def extract_images_from_pdf(pdf_path: str, output_dir: str = None, poppler_path: str = None) -> List[str]:
     """
-    Извлекает изображения страниц из PDF файла и сохраняет их во временную директорию.
+    Extract page images from a PDF file and save them to a temporary directory.
     
     Args:
-        pdf_path: Путь к PDF файлу
-        output_dir: Директория для сохранения изображений (если не указана, создается временная)
-        poppler_path: Путь к исполняемым файлам Poppler (например, "C:/Poppler/Library/bin")
+        pdf_path: Path to the PDF file
+        output_dir: Directory for saving images (if not specified, a temporary one is created)
+        poppler_path: Path to Poppler executable files (e.g., "C:/Poppler/Library/bin")
         
     Returns:
-        Список путей к сохраненным изображениям
+        List of paths to saved images
     """
     if output_dir is None:
         output_dir = tempfile.mkdtemp(prefix="datasheet_parser_")
     else:
         os.makedirs(output_dir, exist_ok=True)
     
-    # Проверяем, существует ли путь к Poppler
+    # Check if Poppler path exists
     if poppler_path is None:
-        # Попытка найти poppler в стандартных местах
+        # Try to find Poppler in standard locations
         possible_paths = [
             "C:/Program Files/poppler/bin",
             "C:/Program Files (x86)/poppler/bin",
@@ -40,19 +40,19 @@ def extract_images_from_pdf(pdf_path: str, output_dir: str = None, poppler_path:
                 poppler_path = path
                 break
     
-    # Извлечение страниц как изображений
+    # Extract pages as images
     try:
         images = convert_from_path(pdf_path, poppler_path=poppler_path)
     except Exception as e:
         if "poppler" in str(e).lower():
             raise Exception(
-                "Не удалось найти Poppler. Пожалуйста, установите Poppler с "
+                "Could not find Poppler. Please install Poppler from "
                 "https://github.com/oschwartz10612/poppler-windows/releases/ "
-                "и укажите путь к нему с помощью аргумента --poppler-path."
+                "and specify the path using the --poppler-path argument."
             )
         raise e
     
-    # Сохранение изображений
+    # Save images
     image_paths = []
     for i, image in enumerate(images):
         img_path = os.path.join(output_dir, f"page_{i+1:03d}.png")
@@ -64,13 +64,13 @@ def extract_images_from_pdf(pdf_path: str, output_dir: str = None, poppler_path:
 
 def get_pdf_metadata(pdf_path: str) -> dict:
     """
-    Получает метаданные PDF файла.
+    Get PDF file metadata.
     
     Args:
-        pdf_path: Путь к PDF файлу
+        pdf_path: Path to the PDF file
         
     Returns:
-        Словарь с метаданными
+        Dictionary with metadata
     """
     reader = PdfReader(pdf_path)
     metadata = reader.metadata
@@ -89,28 +89,28 @@ def get_pdf_metadata(pdf_path: str) -> dict:
 
 def resize_image_if_needed(image_path: str, max_size: int = 5 * 1024 * 1024) -> str:
     """
-    Изменяет размер изображения, если оно превышает указанный размер.
+    Resize an image if it exceeds the specified size.
     
     Args:
-        image_path: Путь к изображению
-        max_size: Максимальный размер в байтах (по умолчанию 5MB)
+        image_path: Path to the image
+        max_size: Maximum size in bytes (default 5MB)
         
     Returns:
-        Путь к изображению (оригинальному или измененному)
+        Path to the image (original or modified)
     """
     file_size = os.path.getsize(image_path)
     
     if file_size <= max_size:
         return image_path
     
-    # Открываем и изменяем размер изображения
+    # Open and resize the image
     with Image.open(image_path) as img:
-        # Определяем коэффициент масштабирования
+        # Determine scaling factor
         scale_factor = (max_size / file_size) ** 0.5
         new_width = int(img.width * scale_factor)
         new_height = int(img.height * scale_factor)
         
-        # Изменяем размер и сохраняем
+        # Resize and save
         resized_img = img.resize((new_width, new_height), Image.LANCZOS)
         resized_img.save(image_path, optimize=True)
     

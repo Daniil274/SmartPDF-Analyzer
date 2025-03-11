@@ -5,50 +5,52 @@ from dotenv import load_dotenv
 from typing import Optional, List, Dict, Any
 
 
-# Загрузка переменных окружения
+# Load environment variables
 load_dotenv()
 
-# API ключ из переменных окружения
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+# API key from environment variables
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# URL для API запросов
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+# URL for API requests (can be overridden to use a compatible server)
+OPENAI_API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
 
-# Модель с мультимодальной поддержкой
-DEFAULT_MODEL = "anthropic/claude-3-opus-20240229"  # Можно выбрать другую модель, поддерживающую обработку изображений
+# Default model
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gpt-4o")
 
 
-class OpenRouterClient:
-    """Клиент для взаимодействия с OpenRouter API"""
+class OpenAIClient:
+    """Client for interacting with OpenAI API or compatible server"""
     
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, api_url: Optional[str] = None):
         """
-        Инициализирует клиент OpenRouter.
+        Initialize the OpenAI client.
         
         Args:
-            api_key: API ключ для OpenRouter (если не указан, берется из переменных окружения)
-            model: Идентификатор модели (если не указан, используется значение по умолчанию)
+            api_key: API key for OpenAI (if not specified, taken from environment variables)
+            model: Model identifier (if not specified, uses default value)
+            api_url: URL for API requests (if not specified, uses default value)
         """
-        self.api_key = api_key or OPENROUTER_API_KEY
+        self.api_key = api_key or OPENAI_API_KEY
         if not self.api_key:
-            raise ValueError("API ключ OpenRouter не указан. Укажите его в .env файле или при создании клиента.")
+            raise ValueError("OpenAI API key not specified. Set it in the .env file or when creating the client.")
         
         self.model = model or DEFAULT_MODEL
+        self.api_url = api_url or OPENAI_API_URL
+        
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://datasheetparser.local",  # Укажите фактический домен вашего приложения
+            "Content-Type": "application/json"
         }
     
     def encode_image(self, image_path: str) -> str:
         """
-        Кодирует изображение в base64.
+        Encode an image to base64.
         
         Args:
-            image_path: Путь к изображению
+            image_path: Path to the image
             
         Returns:
-            Строка base64
+            Base64 string
         """
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode('utf-8')
@@ -56,69 +58,78 @@ class OpenRouterClient:
     def process_page(self, 
                     image_path: str, 
                     previous_context: str = "", 
-                    instructions: str = "Извлеки всю текстовую информацию со страницы даташита и отформатируй её в Markdown") -> str:
+                    instructions: str = "Extract all textual information from the datasheet page and format it in Markdown") -> str:
         """
-        Обрабатывает страницу даташита через API.
+        Process a datasheet page through the API.
         
         Args:
-            image_path: Путь к изображению страницы
-            previous_context: Контекст из предыдущих страниц
-            instructions: Инструкции для модели
+            image_path: Path to the page image
+            previous_context: Context from previous pages
+            instructions: Instructions for the model
             
         Returns:
-            Извлеченный и отформатированный текст
+            Extracted and formatted text
         """
-        # Кодируем изображение
+        # Encode the image
         base64_image = self.encode_image(image_path)
         
-        # Формируем сообщения для модели
+        # Create messages for the model
         messages = []
         
-        # Добавляем системную инструкцию
+        # Add system instruction
         system_message = (
-            "Ты - специалист по извлечению и структурированию информации из технической документации. "
-            "Твоя задача - извлечь всю полезную информацию со страниц даташита и форматировать её в Markdown. "
-            "Используй таблицы, списки, заголовки и другие элементы Markdown для наилучшего представления. "
-            "Оставь только существенную техническую информацию, игнорируя номера страниц, колонтитулы, "
-            "маркеры и другие элементы форматирования, не относящиеся к содержанию."
+            "You are an expert in extracting and structuring information from technical documentation. "
+            "Your task is to extract all valuable information from datasheet pages and format it in Markdown. "
+            "Use tables, lists, headings, and other Markdown elements for optimal presentation. "
+            "Preserve all technical specifications, parameters, diagrams descriptions, and functional details. "
+            "Format tables properly with aligned columns when representing tabular data. "
+            "Include only essential technical information, ignoring page numbers, headers, footers, "
+            "and other formatting elements not related to the content. "
+            "Your output should be well-structured, comprehensive, and immediately usable as technical documentation."
         )
         
         messages.append({"role": "system", "content": system_message})
         
-        # Если есть предыдущий контекст, добавляем его
+        # Create message content
+        content = []
+        
+        # If there is previous context, add it
         if previous_context:
-            messages.append({
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Вот контекст из предыдущих страниц даташита:"},
-                    {"type": "text", "text": previous_context}
-                ]
+            content.append({
+                "type": "text", 
+                "text": "Here is context from previous datasheet pages:\n\n" + previous_context
             })
         
-        # Добавляем текущее изображение с инструкциями
-        messages.append({
-            "role": "user",
-            "content": [
-                {"type": "text", "text": instructions},
-                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}
-            ]
+        # Add instructions and image
+        content.append({"type": "text", "text": instructions})
+        content.append({
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:image/png;base64,{base64_image}"
+            }
         })
         
-        # Формируем запрос
+        messages.append({"role": "user", "content": content})
+        
+        # Create request payload
         payload = {
             "model": self.model,
             "messages": messages,
             "max_tokens": 4096,
-            "temperature": 0.1,  # Низкая температура для более детерминированных ответов
+            "temperature": 0.1,  # Low temperature for more deterministic responses
         }
         
-        # Отправляем запрос
-        response = requests.post(OPENROUTER_API_URL, headers=self.headers, json=payload)
+        # Send request
+        response = requests.post(self.api_url, headers=self.headers, json=payload)
         
-        # Проверяем ответ
+        # Check response
         if response.status_code != 200:
-            raise Exception(f"Ошибка API: {response.status_code}, {response.text}")
+            raise Exception(f"API Error: {response.status_code}, {response.text}")
         
-        # Извлекаем ответ
+        # Extract response
         result = response.json()
-        return result["choices"][0]["message"]["content"] 
+        
+        try:
+            return result["choices"][0]["message"]["content"]
+        except (KeyError, IndexError) as e:
+            raise Exception(f"Unexpected response format: {str(e)}, {result}") 

@@ -6,43 +6,43 @@ import re
 
 def create_markdown_file(content: str, output_path: str) -> None:
     """
-    Создает Markdown файл с указанным содержимым.
+    Create a Markdown file with the specified content.
     
     Args:
-        content: Содержимое для записи в файл
-        output_path: Путь для сохранения файла
+        content: Content to write to the file
+        output_path: Path for saving the file
     """
-    # Создаем директорию, если она не существует
+    # Create directory if it doesn't exist
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     
-    # Записываем содержимое в файл
+    # Write content to file
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(content)
 
 
 def merge_markdown_files(file_paths: List[str], output_path: str, metadata: Dict[str, Any] = None) -> None:
     """
-    Объединяет несколько Markdown файлов в один с добавлением метаданных.
+    Merge multiple Markdown files into one with metadata addition.
     
     Args:
-        file_paths: Список путей к файлам для объединения
-        output_path: Путь для сохранения объединенного файла
-        metadata: Метаданные документа для включения в заголовок
+        file_paths: List of paths to files for merging
+        output_path: Path for saving the merged file
+        metadata: Document metadata to include in the header
     """
-    # Создаем директорию, если она не существует
+    # Create directory if it doesn't exist
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     
-    # Создаем заголовок с метаданными
+    # Create header with metadata
     header = ""
     if metadata:
-        header = "# " + str(metadata.get("title", "Документация")) + "\n\n"
+        header = "# " + str(metadata.get("title", "Documentation")) + "\n\n"
         if metadata.get("author"):
-            header += f"**Автор**: {metadata['author']}\n\n"
+            header += f"**Author**: {metadata['author']}\n\n"
         if metadata.get("subject"):
-            header += f"**Описание**: {metadata['subject']}\n\n"
+            header += f"**Description**: {metadata['subject']}\n\n"
         header += "---\n\n"
     
-    # Объединяем содержимое файлов
+    # Merge file contents
     content = []
     for file_path in file_paths:
         if os.path.exists(file_path):
@@ -50,68 +50,68 @@ def merge_markdown_files(file_paths: List[str], output_path: str, metadata: Dict
                 file_content = f.read().strip()
                 content.append(file_content)
     
-    # Записываем результат
+    # Write the result
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(header + "\n\n".join(content))
 
 
 def clean_markdown(content: str) -> str:
     """
-    Очищает и форматирует Markdown содержимое.
+    Clean and format Markdown content.
     
     Args:
-        content: Исходное содержимое Markdown
+        content: Original Markdown content
         
     Returns:
-        Очищенное содержимое
+        Cleaned content
     """
-    # Удаляем избыточные пустые строки
+    # Remove excessive empty lines
     content = re.sub(r'\n{3,}', '\n\n', content)
     
-    # Удаляем номера страниц и колонтитулы (простая эвристика)
+    # Remove page numbers and headers/footers (simple heuristic)
     content = re.sub(r'\n\s*Page \d+\s*\n', '\n', content, flags=re.IGNORECASE)
     content = re.sub(r'\n\s*\d+\s*\n', '\n', content)
     
-    # Другие очистки по необходимости
+    # Other cleanups as needed
     
     return content
 
 
 def add_table_of_contents(content: str) -> str:
     """
-    Добавляет оглавление на основе заголовков в Markdown.
+    Add a table of contents based on headers in Markdown.
     
     Args:
-        content: Исходное содержимое Markdown
+        content: Original Markdown content
         
     Returns:
-        Содержимое с добавленным оглавлением
+        Content with added table of contents
     """
-    # Находим все заголовки
+    # Find all headers
     headers = re.findall(r'^(#{1,6})\s+(.+)$', content, re.MULTILINE)
     
     if not headers:
         return content
     
-    # Создаем оглавление
-    toc = "## Содержание\n\n"
+    # Create table of contents
+    toc = "## Table of Contents\n\n"
     
     for header_level, header_text in headers:
-        # Пропускаем оглавление, если оно уже есть
-        if header_text.lower() == "содержание":
+        # Skip table of contents if it already exists
+        if header_text.lower() in ["table of contents", "contents", "toc"]:
             continue
             
-        # Получаем уровень заголовка
-        level = len(header_level) - 1  # -1 потому что # - это уровень 1, но отступ будет 0
+        # Get header level
+        level = len(header_level) - 1  # -1 because # is level 1, but indentation will be 0
         
-        # Создаем идентификатор для якоря
+        # Create anchor identifier
         anchor = header_text.lower().replace(' ', '-')
         anchor = re.sub(r'[^\w\-]', '', anchor)
         
-        # Добавляем элемент оглавления
+        # Add TOC item
         toc += f"{' ' * (level * 2)}- [{header_text}](#{anchor})\n"
     
-    # Вставляем оглавление после первого заголовка
+    # Insert TOC after the first header
     first_header_end = re.search(r'^#.+$', content, re.MULTILINE).end()
     result = content[:first_header_end] + "\n\n" + toc + "\n" + content[first_header_end:]
     
