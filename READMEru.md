@@ -39,9 +39,14 @@ brew install poppler
 
 ## Использование
 
-1. Создайте файл `.env` с вашим API ключом OpenAI:
+1. Создайте файл `.env` с вашими API ключами и конфигурацией сервера:
 ```
+# Конфигурация OpenAI API
 OPENAI_API_KEY=your_api_key_here
+
+# Конфигурация OpenRouter (опционально)
+OPENROUTER_API_KEY=your_api_key_here
+OPENROUTER_API_BASE=https://openrouter.ai/api/v1
 ```
 
 2. Запустите скрипт:
@@ -65,6 +70,24 @@ python datasheet_parser.py path_to_pdf_file.pdf \
 По умолчанию используется модель `gpt-4o`. Также можно использовать:
 - `gpt-4-vision-preview` - предыдущая версия мультимодальной модели
 - Другие модели OpenAI с поддержкой анализа изображений
+
+### Альтернативные модели через OpenRouter
+
+Для экономичной обработки документов можно использовать альтернативные модели через [OpenRouter](https://openrouter.ai/):
+- `amazon/nova-lite-v1` - эффективная и экономичная модель для анализа документов
+- `google/gemini-2.0-flash-001` - быстрая и точная альтернатива GPT-4 Vision
+
+Для использования этих моделей:
+1. Зарегистрируйтесь на [OpenRouter](https://openrouter.ai/)
+2. Получите API ключ
+3. Установите переменную окружения:
+```
+OPENROUTER_API_KEY=your_api_key_here
+```
+4. Используйте модель с флагом `--model`:
+```bash
+python datasheet_parser.py document.pdf --model "amazon/nova-lite-v1"
+```
 
 ### Дополнительные опции
 
