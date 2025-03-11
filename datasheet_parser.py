@@ -36,12 +36,13 @@ def parse_args():
     parser.add_argument("--context-window", "-c", type=int, help="Количество предыдущих страниц для контекста", default=2)
     parser.add_argument("--temp-dir", "-t", help="Временная директория для изображений", default=None)
     parser.add_argument("--max-tokens", type=int, help="Максимальное количество токенов для ответа модели", default=4096)
+    parser.add_argument("--poppler-path", "-p", help="Путь к исполняемым файлам Poppler (например, C:/Poppler/Library/bin)", default=None)
     parser.add_argument("--debug", action="store_true", help="Включить отладочный режим")
     
     return parser.parse_args()
 
 
-def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_dir=None, debug=False):
+def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_dir=None, poppler_path=None, debug=False):
     """
     Обрабатывает даташит целиком.
     
@@ -51,6 +52,7 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
         model: Идентификатор модели для использования
         context_window: Количество предыдущих страниц для контекста
         temp_dir: Директория для временных файлов
+        poppler_path: Путь к исполняемым файлам Poppler
         debug: Флаг отладочного режима
     
     Returns:
@@ -69,7 +71,7 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
     
     # Извлекаем изображения страниц
     logger.info(f"Извлечение страниц из PDF как изображения")
-    image_paths = extract_images_from_pdf(pdf_path, temp_dir)
+    image_paths = extract_images_from_pdf(pdf_path, temp_dir, poppler_path)
     logger.info(f"Извлечено {len(image_paths)} страниц")
     
     # Инициализируем клиент API
@@ -166,6 +168,7 @@ def main():
             model=args.model,
             context_window=args.context_window,
             temp_dir=args.temp_dir,
+            poppler_path=args.poppler_path,
             debug=args.debug
         )
         logger.info(f"Успешно создан файл: {output_file}")

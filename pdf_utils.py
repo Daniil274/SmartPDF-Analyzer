@@ -7,13 +7,14 @@ from typing import List, Tuple
 from PIL import Image
 
 
-def extract_images_from_pdf(pdf_path: str, output_dir: str = None) -> List[str]:
+def extract_images_from_pdf(pdf_path: str, output_dir: str = None, poppler_path: str = None) -> List[str]:
     """
     Извлекает изображения страниц из PDF файла и сохраняет их во временную директорию.
     
     Args:
         pdf_path: Путь к PDF файлу
         output_dir: Директория для сохранения изображений (если не указана, создается временная)
+        poppler_path: Путь к исполняемым файлам Poppler (например, "C:/Poppler/Library/bin")
         
     Returns:
         Список путей к сохраненным изображениям
@@ -23,8 +24,33 @@ def extract_images_from_pdf(pdf_path: str, output_dir: str = None) -> List[str]:
     else:
         os.makedirs(output_dir, exist_ok=True)
     
+    # Проверяем, существует ли путь к Poppler
+    if poppler_path is None:
+        # Попытка найти poppler в стандартных местах
+        possible_paths = [
+            "C:/Program Files/poppler/bin",
+            "C:/Program Files (x86)/poppler/bin",
+            "C:/Poppler/bin",
+            "C:/Poppler/Library/bin",
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "poppler/bin")
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                poppler_path = path
+                break
+    
     # Извлечение страниц как изображений
-    images = convert_from_path(pdf_path)
+    try:
+        images = convert_from_path(pdf_path, poppler_path=poppler_path)
+    except Exception as e:
+        if "poppler" in str(e).lower():
+            raise Exception(
+                "Не удалось найти Poppler. Пожалуйста, установите Poppler с "
+                "https://github.com/oschwartz10612/poppler-windows/releases/ "
+                "и укажите путь к нему с помощью аргумента --poppler-path."
+            )
+        raise e
     
     # Сохранение изображений
     image_paths = []

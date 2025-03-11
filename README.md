@@ -20,6 +20,27 @@ To work with PDFs, you need to install poppler:
 - Linux: `apt-get install poppler-utils`
 - macOS: `brew install poppler`
 
+### Установка Poppler (обязательно)
+
+Для работы с PDF требуется установить Poppler:
+
+#### Windows:
+1. Скачайте последнюю версию с [GitHub](https://github.com/oschwartz10612/poppler-windows/releases/)
+2. Распакуйте архив в удобную директорию (например, `C:\Poppler`)
+3. Добавьте путь к папке bin в переменную PATH:
+   - Временно в текущем сеансе PowerShell: `$env:PATH += ";C:\Poppler\Library\bin"`
+   - Или постоянно через "Параметры системы" → "Переменные среды"
+
+#### Linux:
+```bash
+apt-get install poppler-utils
+```
+
+#### macOS:
+```bash
+brew install poppler
+```
+
 ## Usage
 
 1. Create a `.env` file with your OpenRouter API key:
@@ -29,7 +50,21 @@ OPENROUTER_API_KEY=your_api_key_here
 
 2. Run the script:
 ```bash
+# Базовое использование
 python datasheet_parser.py path_to_pdf_file.pdf
+
+# С указанием пути к Poppler
+python datasheet_parser.py path_to_pdf_file.pdf --poppler-path "C:\Poppler\Library\bin"
+```
+
+### Дополнительные опции
+
+```
+--output (-o) - Директория для сохранения результатов (по умолчанию: "output")
+--model (-m) - Идентификатор модели для использования
+--context-window (-c) - Количество предыдущих страниц для контекста (по умолчанию: 2)
+--poppler-path (-p) - Путь к исполняемым файлам Poppler
+--debug - Включить режим отладки
 ```
 
 ## Project Structure
