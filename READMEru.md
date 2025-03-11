@@ -7,7 +7,8 @@
 Данный проект предназначен для автоматической оцифровки PDF документов с технической документацией. Процесс включает:
 1. Разделение PDF файла на отдельные страницы-изображения
 2. Последовательную обработку страниц с помощью мультимодальной модели ИИ через OpenAI API
-3. Сохранение результатов в структурированном Markdown формате 
+3. Опциональный перевод содержимого на указанный язык
+4. Сохранение результатов в структурированном Markdown формате
 
 ## Установка
 
@@ -45,14 +46,18 @@ OPENAI_API_KEY=your_api_key_here
 
 2. Запустите скрипт:
 ```bash
-# Базовое использование
+# Базовое использование - извлечение контента на языке оригинала
 python datasheet_parser.py path_to_pdf_file.pdf
 
-# С указанием пути к Poppler
-python datasheet_parser.py path_to_pdf_file.pdf --poppler-path "C:\Poppler\Library\bin"
+# Извлечение и перевод контента
+python datasheet_parser.py path_to_pdf_file.pdf --translate --target-language "Russian"
 
-# С указанием определенной модели
-python datasheet_parser.py path_to_pdf_file.pdf --model "gpt-4o"
+# Расширенное использование с несколькими опциями
+python datasheet_parser.py path_to_pdf_file.pdf \
+    --translate --target-language "German" \
+    --model "gpt-4o" \
+    --poppler-path "C:\Poppler\Library\bin" \
+    --output "translated_docs"
 ```
 
 ### Доступные модели
@@ -69,6 +74,30 @@ python datasheet_parser.py path_to_pdf_file.pdf --model "gpt-4o"
 --context-window (-c) - Количество предыдущих страниц для контекста (по умолчанию: 2)
 --poppler-path (-p) - Путь к исполняемым файлам Poppler
 --debug - Включить режим отладки
+--translate (-tr) - Включить перевод обработанного даташита
+--target-language (-tl) - Целевой язык для перевода
+```
+
+### Функция перевода
+
+Парсер включает мощную функцию перевода, которая может конвертировать техническую документацию на различные языки, сохраняя техническую точность и форматирование:
+
+- **Прямой перевод**: Контент переводится непосредственно в процессе извлечения
+- **Сохранение форматирования**: Поддерживает все элементы Markdown, таблицы, списки и структурные элементы
+- **Техническая точность**: Сохраняет единицы измерения, формулы, номера моделей и технические характеристики
+- **Поддержка языков**: Работает с любым целевым языком, поддерживаемым моделью ИИ
+- **Именование файлов**: Выходные файлы включают целевой язык в своих именах (например, `datasheet_russian_full.md`)
+
+Примеры использования с переводом:
+```bash
+# Базовый перевод
+python datasheet_parser.py datasheet.pdf --translate --target-language "French"
+
+# Перевод с указанием модели и директории вывода
+python datasheet_parser.py datasheet.pdf \
+    --translate --target-language "Spanish" \
+    --model "gpt-4o" \
+    --output "spanish_docs"
 ```
 
 ## Структура проекта
@@ -77,3 +106,4 @@ python datasheet_parser.py path_to_pdf_file.pdf --model "gpt-4o"
 - `pdf_utils.py` - утилиты для работы с PDF файлами
 - `api_client.py` - клиент для взаимодействия с OpenAI API
 - `markdown_generator.py` - утилиты для создания Markdown файлов
+- `prompts.py` - системные сообщения и инструкции для модели ИИ

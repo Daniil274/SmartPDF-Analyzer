@@ -13,6 +13,7 @@ import time
 from pdf_utils import extract_images_from_pdf, get_pdf_metadata, resize_image_if_needed
 from api_client import OpenAIClient
 from markdown_generator import create_markdown_file, merge_markdown_files, clean_markdown, add_table_of_contents
+from prompts import PAGE_INSTRUCTION_TEMPLATE, PAGE_INSTRUCTION_TEMPLATE_TRANSLATE
 
 
 # Logging setup
@@ -38,11 +39,13 @@ def parse_args():
     parser.add_argument("--max-tokens", type=int, help="Maximum number of tokens for the model response", default=4096)
     parser.add_argument("--poppler-path", "-p", help="Path to Poppler executable files (e.g., C:/Poppler/Library/bin)", default=None)
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    parser.add_argument("--translate", "-tr", action="store_true", help="Enable translation of the parsed datasheet")
+    parser.add_argument("--target-language", "-tl", help="Target language for translation (e.g., 'Russian', 'German')", default=None)
     
     return parser.parse_args()
 
 
-def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_dir=None, poppler_path=None, debug=False):
+def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_dir=None, poppler_path=None, debug=False, translate=False, target_language=None):
     """
     Process the entire datasheet.
     
@@ -54,6 +57,8 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
         temp_dir: Directory for temporary files
         poppler_path: Path to Poppler executable files
         debug: Debug mode flag
+        translate: Flag indicating whether to translate the content
+        target_language: Target language for translation
     
     Returns:
         Path to the generated Markdown file
@@ -68,6 +73,8 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
     
     # Determine output filename based on PDF name
     output_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    if translate and target_language:
+        output_name = f"{output_name}_{target_language.lower()}"
     
     # Extract page images
     logger.info(f"Extracting pages from PDF as images")
@@ -91,12 +98,18 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
         img_path = resize_image_if_needed(image_path)
         
         # Create instructions for the model
-        instructions = (
-            f"This is page {page_num} of {len(image_paths)} from the datasheet. "
-            f"Extract all technical information and format it in Markdown. "
-            f"Use headings, tables, lists, and other Markdown elements for optimal presentation. "
-            f"Maintain technical integrity while creating a clean, structured document."
-        )
+        if translate and target_language:
+            logger.info(f"Translating content to {target_language}")
+            instructions = PAGE_INSTRUCTION_TEMPLATE_TRANSLATE.format(
+                page_num=page_num,
+                total_pages=len(image_paths),
+                target_language=target_language
+            )
+        else:
+            instructions = PAGE_INSTRUCTION_TEMPLATE.format(
+                page_num=page_num,
+                total_pages=len(image_paths)
+            )
         
         # Process the page
         try:
@@ -104,7 +117,9 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
             markdown_content = client.process_page(
                 image_path=img_path,
                 previous_context=context,
-                instructions=instructions
+                instructions=instructions,
+                translate=translate,
+                target_language=target_language
             )
             
             # Clean the Markdown
@@ -161,6 +176,11 @@ def main():
         logger.error(f"PDF file not found: {args.pdf_path}")
         return 1
     
+    # Check translation parameters
+    if args.translate and not args.target_language:
+        logger.error("Translation requested but target language not specified. Use --target-language to specify the language.")
+        return 1
+    
     # Process the datasheet
     try:
         output_file = process_datasheet(
@@ -170,7 +190,9 @@ def main():
             context_window=args.context_window,
             temp_dir=args.temp_dir,
             poppler_path=args.poppler_path,
-            debug=args.debug
+            debug=args.debug,
+            translate=args.translate,
+            target_language=args.target_language
         )
         logger.info(f"Successfully created file: {output_file}")
         return 0

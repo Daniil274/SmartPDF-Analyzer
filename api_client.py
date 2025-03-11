@@ -3,6 +3,7 @@ import base64
 import requests
 from dotenv import load_dotenv
 from typing import Optional, List, Dict, Any
+from prompts import SYSTEM_MESSAGE_EXTRACT, SYSTEM_MESSAGE_TRANSLATE
 
 
 # Load environment variables
@@ -58,7 +59,9 @@ class OpenAIClient:
     def process_page(self, 
                     image_path: str, 
                     previous_context: str = "", 
-                    instructions: str = "Extract all textual information from the datasheet page and format it in Markdown") -> str:
+                    instructions: str = "Extract all textual information from the datasheet page and format it in Markdown",
+                    translate: bool = False,
+                    target_language: Optional[str] = None) -> str:
         """
         Process a datasheet page through the API.
         
@@ -66,6 +69,8 @@ class OpenAIClient:
             image_path: Path to the page image
             previous_context: Context from previous pages
             instructions: Instructions for the model
+            translate: Flag indicating whether to translate the content
+            target_language: Target language for translation
             
         Returns:
             Extracted and formatted text
@@ -77,16 +82,9 @@ class OpenAIClient:
         messages = []
         
         # Add system instruction
-        system_message = (
-            "You are an expert in extracting and structuring information from technical documentation. "
-            "Your task is to extract all valuable information from datasheet pages and format it in Markdown. "
-            "Use tables, lists, headings, and other Markdown elements for optimal presentation. "
-            "Preserve all technical specifications, parameters, diagrams descriptions, and functional details. "
-            "Format tables properly with aligned columns when representing tabular data. "
-            "Include only essential technical information, ignoring page numbers, headers, footers, "
-            "and other formatting elements not related to the content. "
-            "Your output should be well-structured, comprehensive, and immediately usable as technical documentation."
-        )
+        system_message = SYSTEM_MESSAGE_TRANSLATE if translate else SYSTEM_MESSAGE_EXTRACT
+        if translate and target_language:
+            system_message = system_message.format(target_language=target_language)
         
         messages.append({"role": "system", "content": system_message})
         
