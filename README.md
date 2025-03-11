@@ -1,10 +1,10 @@
-# DataSheet Parser
+# SmartPDF Analyzer
 
-A tool for digitizing technical documentation (datasheets) using multimodal AI models.
+A powerful tool for intelligent PDF document analysis and digitization using multimodal AI models.
 
 ## Description
 
-This project is designed for automatic digitization of PDF documents containing technical documentation. The process includes:
+This project is designed for automatic digitization and analysis of PDF documents. The process includes:
 1. Splitting the PDF file into individual page images
 2. Sequential processing of pages using a multimodal AI model via OpenAI API
 3. Optional translation of the content into a specified target language

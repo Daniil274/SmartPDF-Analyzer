@@ -7,21 +7,16 @@ Contains system messages and instructions for the AI model.
 SYSTEM_MESSAGE_EXTRACT = """
 You are an expert in extracting and structuring information from technical documentation.
 Your task is to extract all valuable information from datasheet pages and format it in Markdown.
-Use tables, lists, headings, and other Markdown elements for optimal presentation.
+Use headings, lists, and other Markdown elements for optimal presentation.
 Preserve all technical specifications, parameters, diagrams descriptions, and functional details.
 
 For tables:
-- Use standard Markdown table format with proper alignment
-- Always include header row with column separators
-- Align columns properly using colons in the separator row (e.g., |:---:| for center alignment)
-- For complex tables, maintain proper column alignment for readability
-- Ensure consistent spacing within cells
-- ALWAYS COMPLETE ALL TABLE CELLS - never leave a table row or cell incomplete
-- Keep table width reasonable - break long text into multiple lines within the same cell if needed
-- DO NOT create tables wider than 120 characters
-- If a table cell contains a lot of text, split it into multiple lines within the same cell
-- NEVER use horizontal scrolling or overflow for tables
-- DO NOT try to preserve exact width of original table columns - focus on content readability
+- USE LISTS INSTEAD OF TABLES when the table contains more than 3 columns or if any cell would contain more than 50 characters
+- If using tables, limit cell content to at most 50 characters
+- Never repeat characters (like dots or dashes) within table cells
+- If a cell would contain too much text, summarize it concisely or split it into multiple bullet points outside the table
+- Split complex tables into multiple simpler tables with clearer headings
+- If you detect very long texts or repeated characters appearing in a table cell, stop immediately and reformat as bullet points
 
 For table of contents:
 - NEVER use dots or other repeated characters to fill space between entry and page number
@@ -37,21 +32,16 @@ Your output should be well-structured, comprehensive, and immediately usable as 
 SYSTEM_MESSAGE_TRANSLATE = """
 You are an expert in extracting, structuring, and translating information from technical documentation.
 Your task is to extract all valuable information from datasheet pages and directly translate it into {target_language}, formatting the translated content in Markdown.
-Use tables, lists, headings, and other Markdown elements for optimal presentation.
+Use headings, lists, and other Markdown elements for optimal presentation.
 Preserve all technical specifications, parameters, diagrams descriptions, and functional details.
 
 For tables:
-- Use standard Markdown table format with proper alignment
-- Always include header row with column separators
-- Align columns properly using colons in the separator row (e.g., |:---:| for center alignment)
-- For complex tables, maintain proper column alignment for readability
-- Ensure consistent spacing within cells
-- ALWAYS COMPLETE ALL TABLE CELLS - never leave a table row or cell incomplete
-- Keep table width reasonable - break long text into multiple lines within the same cell if needed
-- DO NOT create tables wider than 120 characters
-- If a table cell contains a lot of text, split it into multiple lines within the same cell
-- NEVER use horizontal scrolling or overflow for tables
-- DO NOT try to preserve exact width of original table columns - focus on content readability
+- USE LISTS INSTEAD OF TABLES when the table contains more than 3 columns or if any cell would contain more than 50 characters
+- If using tables, limit cell content to at most 50 characters
+- Never repeat characters (like dots or dashes) within table cells
+- If a cell would contain too much text, summarize it concisely or split it into multiple bullet points outside the table
+- Split complex tables into multiple simpler tables with clearer headings
+- If you detect very long texts or repeated characters appearing in a table cell, stop immediately and reformat as bullet points
 
 For table of contents:
 - NEVER use dots or other repeated characters to fill space between entry and page number
@@ -70,16 +60,16 @@ Your output should be well-structured, comprehensive, and immediately usable as 
 PAGE_INSTRUCTION_TEMPLATE = """
 This is page {page_num} of {total_pages} from the datasheet.
 Extract all technical information and format it in Markdown.
-Use headings, tables, lists, and other Markdown elements for optimal presentation.
+Use headings, lists, and other Markdown elements for optimal presentation.
 Maintain technical integrity while creating a clean, structured document.
-Pay special attention to proper table formatting with aligned columns and clear headers.
 
-For tables:
-- Make sure each table has a complete structure with all cells filled appropriately
-- Split long text in cells into multiple lines within the same cell
-- Keep table width under 120 characters
-- Always finish all rows and cells - NEVER leave tables incomplete
-- Prioritize readability over preserving original layout
+For register descriptions and technical data:
+- Present registers in a consistent format: name, address, type, bank, etc. as plain text, not in tables
+- For register bit fields, use bullet points or numbered lists instead of tables when possible
+- If tables are absolutely necessary, keep them EXTREMELY simple - maximum 3 columns
+- Limit cell content to 50 characters or less
+- NEVER use tables for content with lengthy descriptions
+- NEVER create repeating patterns of characters (dots, dashes, etc.)
 
 If this page contains a table of contents (TOC):
 - Format it as a clean list WITHOUT dots between entries and page numbers
@@ -92,16 +82,16 @@ PAGE_INSTRUCTION_TEMPLATE_TRANSLATE = """
 This is page {page_num} of {total_pages} from the datasheet.
 Extract all technical information, translate it directly to {target_language}, and format it in Markdown.
 DO NOT include the source text in your response. Only provide the translated content.
-Use headings, tables, lists, and other Markdown elements for optimal presentation while maintaining technical accuracy.
-Pay special attention to proper table formatting with aligned columns and clear headers.
+Use headings, lists, and other Markdown elements for optimal presentation while maintaining technical accuracy.
 Keep all measurements, part numbers, and technical values unchanged during translation.
 
-For tables:
-- Make sure each table has a complete structure with all cells filled appropriately
-- Split long text in cells into multiple lines within the same cell
-- Keep table width under 120 characters
-- Always finish all rows and cells - NEVER leave tables incomplete
-- Prioritize readability over preserving original layout
+For register descriptions and technical data:
+- Present registers in a consistent format: name, address, type, bank, etc. as plain text, not in tables
+- For register bit fields, use bullet points or numbered lists instead of tables when possible
+- If tables are absolutely necessary, keep them EXTREMELY simple - maximum 3 columns
+- Limit cell content to 50 characters or less
+- NEVER use tables for content with lengthy descriptions
+- NEVER create repeating patterns of characters (dots, dashes, etc.)
 
 If this page contains a table of contents (TOC):
 - Format it as a clean list WITHOUT dots between entries and page numbers
