@@ -29,8 +29,8 @@ pip install -r requirements.txt
 OPENAI_API_KEY=your_api_key_here
 
 # OpenRouter configuration (optional)
-OPENROUTER_API_KEY=your_api_key_here
-OPENROUTER_API_BASE=https://openrouter.ai/api/v1
+OPENAI_API_KEY=your_api_key_here
+OPENAI_API_BASE=https://openrouter.ai/api/v1
 ```
 
 2. Run the script:
