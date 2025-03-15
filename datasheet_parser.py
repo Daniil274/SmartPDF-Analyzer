@@ -30,16 +30,14 @@ logger = logging.getLogger("DataSheetParser")
 
 def parse_args():
     """Parse command line arguments"""
-    parser = argparse.ArgumentParser(description="Datasheet parser using multimodal AI models")
-    parser.add_argument("pdf_path", help="Path to the PDF datasheet file")
+    parser = argparse.ArgumentParser(description="Document text extraction using multimodal AI models")
+    parser.add_argument("pdf_path", help="Path to the PDF file")
     parser.add_argument("--output", "-o", help="Directory for saving results", default="output")
     parser.add_argument("--model", "-m", help="Model to use", default=None)
-    parser.add_argument("--context-window", "-c", type=int, help="Number of previous pages for context", default=2)
     parser.add_argument("--temp-dir", "-t", help="Temporary directory for images", default=None)
-    parser.add_argument("--max-tokens", type=int, help="Maximum number of tokens for the model response", default=4096)
     parser.add_argument("--poppler-path", "-p", help="Path to Poppler executable files (e.g., C:/Poppler/Library/bin)", default=None)
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    parser.add_argument("--translate", "-tr", action="store_true", help="Enable translation of the parsed datasheet")
+    parser.add_argument("--translate", "-tr", action="store_true", help="Enable translation of the parsed document")
     parser.add_argument("--target-language", "-tl", help="Target language for translation (e.g., 'Russian', 'German')", default=None)
     parser.add_argument("--start-page", "-sp", type=int, help="First page to process (1-based index)", default=None)
     parser.add_argument("--end-page", "-ep", type=int, help="Last page to process (1-based index)", default=None)
@@ -48,7 +46,7 @@ def parse_args():
 
 
 def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_dir=None, poppler_path=None, 
-                     debug=False, translate=False, target_language=None, start_page=None, end_page=None):
+                     debug=False, translate=False, target_language=None, start_page=None, end_page=None, use_context=True):
     """
     Process the entire datasheet.
     
@@ -64,12 +62,21 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
         target_language: Target language for translation
         start_page: First page to process (1-based index)
         end_page: Last page to process (1-based index)
+        use_context: Flag indicating whether to use context from previous pages
     
     Returns:
         Path to the generated Markdown file
     """
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
+    
+    # Настройка логгера для сохранения промптов и ответов модели
+    prompt_logger = logging.getLogger("ModelPrompts")
+    if debug:
+        prompt_file_handler = logging.FileHandler("model_prompts.log")
+        prompt_file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        prompt_logger.addHandler(prompt_file_handler)
+        prompt_logger.setLevel(logging.DEBUG)
     
     # Get PDF metadata
     logger.info(f"Extracting metadata from {pdf_path}")
@@ -116,6 +123,9 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
     context = ""
     context_pages = []
     
+    # We're disabling context by default, so we'll just log that it's disabled
+    logger.info("Context feature is disabled. Each page will be processed independently.")
+    
     logger.info(f"Starting page processing")
     for i, image_path in enumerate(tqdm(image_paths)):
         # Get actual page number (file name format: page_XXX.png)
@@ -147,9 +157,12 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
         # Process the page
         try:
             logger.info(f"Sending page {page_num} image to API")
+            # We're always passing an empty context now, regardless of use_context
+            previous_context = ""
+            
             markdown_content = client.process_page(
                 image_path=img_path,
-                previous_context=context,
+                previous_context=previous_context,
                 instructions=instructions,
                 translate=translate,
                 target_language=target_language
@@ -162,12 +175,6 @@ def process_datasheet(pdf_path, output_dir, model=None, context_window=2, temp_d
             page_md_file = os.path.join(output_dir, f"{output_name}_page_{page_num:03d}.md")
             create_markdown_file(clean_content, page_md_file)
             page_markdown_files.append(page_md_file)
-            
-            # Update context
-            context_pages.append(clean_content)
-            if len(context_pages) > context_window:
-                context_pages.pop(0)
-            context = "\n\n".join(context_pages)
             
             # In debug mode: pause between requests for easier debugging
             if debug and i < len(image_paths) - 1:
@@ -223,20 +230,21 @@ def main():
         logger.error("End page must be greater than or equal to start page.")
         return 1
     
-    # Process the datasheet
+    # Process the document
     try:
         output_file = process_datasheet(
             pdf_path=args.pdf_path,
             output_dir=args.output,
             model=args.model,
-            context_window=args.context_window,
+            context_window=0,  # Context window is irrelevant as we're not using context
             temp_dir=args.temp_dir,
             poppler_path=args.poppler_path,
             debug=args.debug,
             translate=args.translate,
             target_language=args.target_language,
             start_page=args.start_page,
-            end_page=args.end_page
+            end_page=args.end_page,
+            use_context=False  # Always disable context
         )
         logger.info(f"Successfully created file: {output_file}")
         return 0

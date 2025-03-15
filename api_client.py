@@ -4,6 +4,8 @@ import requests
 from dotenv import load_dotenv
 from typing import Optional, List, Dict, Any
 from prompts import SYSTEM_MESSAGE_EXTRACT, SYSTEM_MESSAGE_TRANSLATE
+import logging
+import re
 
 
 # Load environment variables
@@ -17,6 +19,9 @@ OPENAI_API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/chat/com
 
 # Default model
 DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "gpt-4o")
+
+# Настройка логгера для API клиента
+logger = logging.getLogger("APIClient")
 
 
 class OpenAIClient:
@@ -59,15 +64,15 @@ class OpenAIClient:
     def process_page(self, 
                     image_path: str, 
                     previous_context: str = "", 
-                    instructions: str = "Extract all textual information from the datasheet page and format it in Markdown",
+                    instructions: str = "Extract all textual information from the document page and format it in Markdown",
                     translate: bool = False,
                     target_language: Optional[str] = None) -> str:
         """
-        Process a datasheet page through the API.
+        Process a document page through the API.
         
         Args:
             image_path: Path to the page image
-            previous_context: Context from previous pages
+            previous_context: Context from previous pages (not used in current implementation)
             instructions: Instructions for the model
             translate: Flag indicating whether to translate the content
             target_language: Target language for translation
@@ -86,17 +91,14 @@ class OpenAIClient:
         if translate and target_language:
             system_message = system_message.format(target_language=target_language)
         
+        # Добавляем инструкцию для блока размышлений
+        thinking_instruction = "First, analyze the document in <thinking></thinking> tags, describing what you see and your approach to extracting the text. Then provide the final extracted text."
+        system_message = system_message + "\n\n" + thinking_instruction
+        
         messages.append({"role": "system", "content": system_message})
         
         # Create message content
         content = []
-        
-        # If there is previous context, add it
-        if previous_context:
-            content.append({
-                "type": "text", 
-                "text": "Here is context from previous datasheet pages:\n\n" + previous_context
-            })
         
         # Add instructions and image
         content.append({"type": "text", "text": instructions})
@@ -117,17 +119,40 @@ class OpenAIClient:
             "temperature": 0.1,  # Low temperature for more deterministic responses
         }
         
+        # Добавить параметр для избежания проблем с токенизацией неизвестных символов
+        if "gemma" in self.model.lower():
+            # Для моделей Gemma добавляем специальные параметры
+            payload["top_p"] = 0.9
+            payload["frequency_penalty"] = 0.0
+            payload["presence_penalty"] = 0.0
+        
+        # Логируем промпт
+        logger.info(f"Sending prompt to {self.model}:")
+        logger.info(f"System message: {system_message}")
+        logger.info(f"User instruction: {instructions}")
+        
         # Send request
         response = requests.post(self.api_url, headers=self.headers, json=payload)
         
         # Check response
         if response.status_code != 200:
+            logger.error(f"API Error: {response.status_code}, {response.text}")
             raise Exception(f"API Error: {response.status_code}, {response.text}")
         
         # Extract response
         result = response.json()
         
         try:
-            return result["choices"][0]["message"]["content"]
+            content = result["choices"][0]["message"]["content"]
+            # Логируем ответ модели
+            logger.info(f"Received response from {self.model} ({len(content)} chars)")
+            
+            # Удаляем блок размышлений из ответа
+            cleaned_content = re.sub(r'<thinking>.*?</thinking>', '', content, flags=re.DOTALL)
+            # Удаляем пустые строки, которые могли остаться после удаления блока размышлений
+            cleaned_content = re.sub(r'\n{3,}', '\n\n', cleaned_content)
+            
+            return cleaned_content
         except (KeyError, IndexError) as e:
+            logger.error(f"Unexpected response format: {str(e)}, {result}")
             raise Exception(f"Unexpected response format: {str(e)}, {result}") 
