@@ -13,28 +13,12 @@
 ## Установка
 
 ```bash
+# Клонируем и открываем репозиторий
+git clone https://github.com/Daniil274/SmartPDF-Analyzer
+cd SmartPDF-Analyzer
+
+# Устанавливаем зависимости
 pip install -r requirements.txt
-```
-
-### Установка Poppler (обязательно)
-
-Для работы с PDF необходимо установить Poppler:
-
-#### Windows:
-1. Скачайте последнюю версию с [GitHub](https://github.com/oschwartz10612/poppler-windows/releases/)
-2. Распакуйте архив в удобную директорию (например, `C:\Poppler`)
-3. Добавьте путь к папке bin в переменную среды PATH:
-   - Временно в текущем сеансе PowerShell: `$env:PATH += ";C:\Poppler\Library\bin"`
-   - Или постоянно через "Параметры системы" → "Переменные среды"
-
-#### Linux:
-```bash
-apt-get install poppler-utils
-```
-
-#### macOS:
-```bash
-brew install poppler
 ```
 
 ## Использование
@@ -61,7 +45,6 @@ python datasheet_parser.py path_to_pdf_file.pdf --translate --target-language "R
 python datasheet_parser.py path_to_pdf_file.pdf \
     --translate --target-language "German" \
     --model "gpt-4o" \
-    --poppler-path "C:\Poppler\Library\bin" \
     --output "translated_docs"
 ```
 
@@ -95,7 +78,6 @@ python datasheet_parser.py document.pdf --model "qwen/qwen2.5-vl-72b-instruct"
 ```
 --output (-o) - Директория для сохранения результатов (по умолчанию: "output")
 --model (-m) - Идентификатор модели для использования
---poppler-path (-p) - Путь к исполняемым файлам Poppler
 --debug - Включить режим отладки
 --translate (-tr) - Включить перевод извлеченного текста
 --target-language (-tl) - Целевой язык для перевода

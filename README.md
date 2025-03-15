@@ -13,28 +13,12 @@ This project is designed for extracting text from PDF documents. The process inc
 ## Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/Daniil274/SmartPDF-Analyzer
+cd SmartPDF-Analyzer
+
+# Install dependencies
 pip install -r requirements.txt
-```
-
-### Installing Poppler (required)
-
-To work with PDFs, you need to install Poppler:
-
-#### Windows:
-1. Download the latest version from [GitHub](https://github.com/oschwartz10612/poppler-windows/releases/)
-2. Extract the archive to a convenient directory (e.g., `C:\Poppler`)
-3. Add the bin folder path to the PATH environment variable:
-   - Temporarily in the current PowerShell session: `$env:PATH += ";C:\Poppler\Library\bin"`
-   - Or permanently through "System Settings" → "Environment Variables"
-
-#### Linux:
-```bash
-apt-get install poppler-utils
-```
-
-#### macOS:
-```bash
-brew install poppler
 ```
 
 ## Usage
@@ -61,7 +45,6 @@ python datasheet_parser.py path_to_pdf_file.pdf --translate --target-language "R
 python datasheet_parser.py path_to_pdf_file.pdf \
     --translate --target-language "German" \
     --model "gpt-4o" \
-    --poppler-path "C:\Poppler\Library\bin" \
     --output "translated_docs"
 ```
 
@@ -95,7 +78,6 @@ python datasheet_parser.py document.pdf --model "qwen/qwen2.5-vl-72b-instruct"
 ```
 --output (-o) - Output directory for results (default: "output")
 --model (-m) - Model identifier to use
---poppler-path (-p) - Path to Poppler executable files
 --debug - Enable debug mode
 --translate (-tr) - Enable translation of the extracted text
 --target-language (-tl) - Target language for translation
